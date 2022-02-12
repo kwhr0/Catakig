@@ -8,6 +8,7 @@
 	uint8_t		mContent;		// kA2DiskNone, etc.
 	BOOL		mDiskModified;	// any writes since disk was loaded?
 
+	uint8_t*	mDiskBase;
 	uint8_t*	mTrackBase;		// base of active track (circular buffer)
 	unsigned	mTheta,			// current byte position in active track
 				mTrackSize;		// total number of bytes in track
@@ -15,7 +16,7 @@
 				mTrackMax;		// largest allowed track index
 }
 
-- (id)			InitUsingBuffer:(uint8_t [])buffer;
+- (id)			Init;
 - (BOOL)		SeekTrack:(unsigned)reqTrack;
 + (BOOL)		ShouldShowFilename:(NSString*)path;
 

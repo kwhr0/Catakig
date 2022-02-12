@@ -205,8 +205,7 @@ static void EnnybSector(uint8_t* dest, //[kSizePhysSector]
 	if (reqTrack > mTrackMax) // then requested track out of range
 		return NO;
 
-//	if (mTrackIndex != reqTrack)
-		A2MemoryMap(mTrackBase, 0x2000, mWorkFD, reqTrack*0x2000);
+	mTrackBase = mDiskBase + reqTrack * 0x2000;
 
 //	mTheta = 0; // always rewind??
 	mTrackIndex = reqTrack;
@@ -237,17 +236,18 @@ static void EnnybSector(uint8_t* dest, //[kSizePhysSector]
 	mTheta			= 0;
 	mDiskModified	= NO;
 
-	memset(mTrackBase, 0xFF, mTrackSize);
+	munmap(mDiskBase, 35 * 0x2000);
+	mDiskBase = mTrackBase = NULL;
 }
 
 //---------------------------------------------------------------------------
 
-- (id)InitUsingBuffer:(uint8_t [/*0x2000*/])buffer
+- (id)Init
 {
 	if (nil == (self = [super init]))
 		return nil;
 
-	mTrackBase	= buffer;
+	mDiskBase = mTrackBase = NULL;
 	mOrigFD		= kBadFD;
 	mWorkFD		= A2OpenTempFile(35L * 0x2000);
 
@@ -385,6 +385,14 @@ static void EnnybSector(uint8_t* dest, //[kSizePhysSector]
 		return NO;
 	}
 
+	mDiskBase = mmap(NULL, 35 * 0x2000, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FILE, mWorkFD, 0);
+	if (mDiskBase == MAP_FAILED)
+	{
+		[self Unload];
+		return NO;
+	}
+	mTrackBase = mDiskBase;
+	
 	return YES;
 }
 

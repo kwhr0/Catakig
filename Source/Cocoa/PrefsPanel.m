@@ -5,6 +5,8 @@
 #import "Catakig-Cocoa.h"
 #import "PrefsPanel.h"
 #import "ScreenView.h"
+#import "LibAppleII.h"
+#import "MyDocument.h"
 
 @implementation PrefsPanel
 //---------------------------------------------------------------------------
@@ -24,6 +26,11 @@ static void SyncDefaults(BOOL registering)
 	PREF(keepBackupFiles, Bool, NO)
 	PREF(monochromeHue, Integer, 0x33FF33)
 	PREF(joystickControl, Integer, kJoyMouse)
+	PREF(model, Integer, 1)
+	PREF(ram, Integer, 0)
+	PREF(speed, Integer, 1)
+	PREF(diskImagePath[0], Object, @"")
+	PREF(diskImagePath[1], Object, @"")
 
 	if (not registering)
 		[sud synchronize];
@@ -42,6 +49,8 @@ static void SyncDefaults(BOOL registering)
 
 - (void)close
 {
+	G.prefs.model = A2G.defaultModel;
+	G.prefs.ram = A2G.defaultExtraRAM;
 	G.prefs.firstLaunch = NO;
 	SyncDefaults(NO);
 
@@ -91,7 +100,7 @@ static void SyncDefaults(BOOL registering)
 
 	First ensure color is in RGB space??
 */
-	float		r, g, b;
+	CGFloat		r, g, b;
 
 	[[sender color] getRed:&r green:&g blue:&b alpha:nil];
 	G.prefs.monochromeHue =

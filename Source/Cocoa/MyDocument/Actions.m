@@ -220,16 +220,21 @@
 	mFileFilter = 0;
 	if (userResponse != NSOKButton)
 		return;
+	[self loadDrive:labs([sender tag]) - 1 path:[panel filename]];
+}
 
-	int					index = abs([sender tag]) - 1;
+- (void)loadDrive:(int)index path:(NSString *)path {
 	id<A2PrDiskDrive>   ddrive = [mA2 DiskDrive:index];
 	NSTextField*		dname = (&mDDrive0)[index];
 
-	if ([ddrive Load:[panel filename]])
+	if ([ddrive Load:path])
 	{
 		[dname setTextColor:( [ddrive Content] == kA2DiskReadOnly?
 			[NSColor yellowColor] : [NSColor greenColor] )];
 		[dname setStringValue:[ddrive Label]];
+		G.prefs.diskImagePath[index] = [path copy];
+		[mA2 Lights]; // release reset
+		[mA2 powerOn];
 		return;
 	}
 

@@ -6,6 +6,7 @@
 */
 #import "LibAppleII-Priv.h"
 #import "A2DiskDrive.h"
+#import "Catakig-Cocoa.h"
 
 @implementation A2Computer
 //---------------------------------------------------------------------------
@@ -25,15 +26,15 @@
 	[A2Computer setVersion:1]; //??
 	mlock(&A2T, sizeof(A2T));
 
-	[NSTimer scheduledTimerWithTimeInterval:0.45
+	[NSTimer scheduledTimerWithTimeInterval:1
 		target:			[A2Computer class]
 		selector:		@selector(_UpdateClock:)
 		userInfo:		nil
 		repeats:		YES ];
 
-	if (NSPageSize() > 0x2000)
-		NSLog(@"Warning: VM page size = %ld (> 0x2000)", NSPageSize());
 #if 0
+	if (NSPageSize() > 0x2000)
+		NSLog(@"Warning: VM page size = %ld (> 0x2000)", (unsigned long)NSPageSize());
 	NSLog(@"A2Computer size = %lu", sizeof(struct{@defs(A2Computer)}));
 	NSLog(@"VM page size = 0x%X", NSPageSize());
 	NSLog(@"A2T size = %lu", sizeof(A2T));
@@ -68,6 +69,13 @@ static void RandomizeVideoMemory(void* ram, unsigned model)
 	if (nil == (self = [super init]))
 		return nil;
 
+	A2G.defaultModel = G.prefs.model;
+	A2G.defaultExtraRAM = G.prefs.ram;
+	if (GetCurrentEventKeyModifiers() & 1 << shiftKeyBit) {
+		[G.appController setup];
+		G.prefs.diskImagePath[0] = G.prefs.diskImagePath[1] = @"";
+	}
+	
 	mModel				= A2G.defaultModel;
 	mFlags				= kfTEXT;
 	mHalts				= kfHaltNoPower | kfHaltReset;
@@ -93,13 +101,16 @@ static void RandomizeVideoMemory(void* ram, unsigned model)
 //	work with.
 
 	for (int dd = 4;  --dd >= 0;)
-		mIWM[dd>>1].drive[dd&1] = [[A2DiskDrive alloc]
-			InitUsingBuffer: mMemory->diskBuffers[dd] ];
+		mIWM[dd>>1].drive[dd&1] = [[A2DiskDrive alloc] Init];
 
 	RandomizeVideoMemory(mMemory->RAM, mModel);
 	madvise(mMemory, mMemorySize, MADV_SEQUENTIAL);
 	[self _PrepareModel];
 	return self;
+}
+
+- (void)powerOn {
+	mHalts &= ~kfHaltNoPower;
 }
 
 //---------------------------------------------------------------------------
@@ -147,46 +158,4 @@ static void RandomizeVideoMemory(void* ram, unsigned model)
 	[super dealloc];
 }
 
-//---------------------------------------------------------------------------
-
-- (void)encodeWithCoder:(NSCoder*)enc // experimental!!
-{
-	[enc encodeArrayOfObjCType:@encode(uint8_t) count:7 at:&mA];
-	[enc encodeArrayOfObjCType:@encode(uint16_t) count:2 at:&mPC];
-	[enc encodeArrayOfObjCType:@encode(uint32_t) count:4 at:&mFlags];
-
-	[enc encodeBytes:mMemory->RAM length:2*k64KB];
-
-	for (int i = 0;  i <= 1;  i++)
-	{
-		A2IWM*	iwm = mIWM + i;
-	}
-}
-
-//---------------------------------------------------------------------------
-
-- (id)initWithCoder:(NSCoder*)dec // experimental!!
-{
-	if (nil == (self = [super init]))
-		return nil;
-
-	void*		ptr;
-	unsigned	len;
-
-	[dec decodeArrayOfObjCType:@encode(uint8_t) count:7 at:&mA];
-	[dec decodeArrayOfObjCType:@encode(uint16_t) count:2 at:&mPC];
-	[dec decodeArrayOfObjCType:@encode(uint32_t) count:4 at:&mFlags];
-
-	ptr = [dec decodeBytesWithReturnedLength:&len];
-	memcpy(mMemory->RAM, ptr, len);
-
-	for (int i = 0;  i <= 1;  i++)
-	{
-		A2IWM*	iwm = mIWM + i;
-	}
-
-	return self;
-}
-
-//---------------------------------------------------------------------------
 @end

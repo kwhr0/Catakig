@@ -9,7 +9,7 @@
 enum
 {
 	kSampleRate			= 22050,
-	kNumSpeeds			= 4,
+	kNumSpeeds			= 8,
 	kSpeedMask			= kNumSpeeds - 1,
 	kBytesPerChannel	= 1,
 	kUnsigned			= YES,
@@ -26,119 +26,57 @@ enum
 };
 
 //---------------------------------------------------------------------------
-#if 0
-static OSStatus InputProc0(
-	ScreenView*					screen,
+int gAudioCallbackCount;
+
+static int loopN;
+
+static OSStatus InputProc(
+	ScreenView*					_screen,
 	AudioUnitRenderActionFlags*	ioActionFlags,
 	const AudioTimeStamp*		timeStamp,
 	UInt32						busNumber,
 	UInt32						nFrames,
 	AudioBufferList*			ioData)
 {
-	*ioActionFlags |= kAudioUnitRenderAction_OutputIsSilence;
-	memset(ioData->mBuffers[0].mData, 0x80, nFrames);
-	return noErr;
-}
-#endif
-//---------------------------------------------------------------------------
-
-static OSStatus InputProc12(
-	ScreenView*					screen,
-	AudioUnitRenderActionFlags*	ioActionFlags,
-	const AudioTimeStamp*		timeStamp,
-	UInt32						busNumber,
-	UInt32						nFrames,
-	AudioBufferList*			ioData)
-{/*
-	Called during normal-speed and double-speed emulation.
-*/
-	uint8_t*		data = ioData->mBuffers[0].mData;
-#if 0
-	static BOOL		printed;
-
-	if (not printed)
-	{
-		printed = YES;
-		NSLog(@"%d %d %ld %ld",
-			ioData->mNumberBuffers,
-			ioData->mBuffers[0].mNumberChannels,
-			ioData->mBuffers[0].mDataByteSize,
-			numberFrames);
-	}
-#endif
-
-	screen->mRunForOneStep(screen->mA2, nil, data);
-
-#if 0
-	if (nFrames == 368)
-	{
-		for (int i = 91;  --i >= 0;)
-		{
-			(data+276)[i] = (data+273)[i];
-			(data+184)[i] = (data+182)[i];
-			(data+ 92)[i] = (data+ 91)[i];
-			data[183] = data[182];
-			data[275] = data[274];
-			data[367] = data[366];
+	@autoreleasepool {
+		BOOL generated = FALSE;
+		NSEnumerator *e = [[G.docMgr documents] objectEnumerator];
+		MyDocument *doc;
+		while ((doc = [e nextObject])) {
+			ScreenView *screen = ((MyDocument *)doc)->mScreen;
+			if (!screen) continue;
+			A2Computer *a2 = screen->mA2;
+			if (loopN < 10) {
+				BOOL f = screen == G.activeScreen;
+				screen->mRunForOneStep(a2, nil, loopN, f ? ioData->mBuffers[0].mData : nil);
+				generated |= f;
+			}
+			else dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+				screen->mRunForOneStep(a2, nil, loopN, nil);
+			});
 		}
+		if (!generated) memset(ioData->mBuffers[0].mData, 128, kA2SamplesPerStep);
+		gAudioCallbackCount++;
 	}
-#endif
-
 	return noErr;
 }
-
-//---------------------------------------------------------------------------
-
-static OSStatus InputProc3(
-	ScreenView*					screen,
-	AudioUnitRenderActionFlags*	ioActionFlags,
-	const AudioTimeStamp*		timeStamp,
-	UInt32						busNumber,
-	UInt32						nFrames,
-	AudioBufferList*			ioData)
-{/*
-	Called during 6x speed emulation.  The playback rate is double the
-	norm, and we call the Apple II emulator 3 times in this callback.
-*/
-	A2Computer*		a2   = screen->mA2;
-	uint8_t*		data = ioData->mBuffers[0].mData;
-
-	screen->mRunForOneStep(a2, nil, data);
-	screen->mRunForOneStep(a2, nil, data);
-	screen->mRunForOneStep(a2, nil, data);
-
-	return noErr;
-}
-
-//---------------------------------------------------------------------------
-
-static struct
-{
-	void*		inputProc;
-	UInt32		sampleRate,
-				bufFrameSize;
-}
-	gSpeedInfo[kNumSpeeds] =
-{
-	{0},
-	{InputProc12,	kSampleRate,	kA2SamplesPerStep*2},
-	{InputProc12,	kSampleRate*2,	kA2SamplesPerStep},
-	{InputProc3,	kSampleRate*2,	kA2SamplesPerStep},
-};
 
 //---------------------------------------------------------------------------
 
 - (OSStatus)_PrepareAudioUnit:(int)speed
 {
+	static int st[] = { 0, 1, 2, 6, 40, 80, 200, 400 };
+	speed &= 7;
+	G.prefs.speed = speed;
+	loopN = speed > 1 ? st[speed] >> 1 : st[speed];
 	AURenderCallbackStruct  input =
 	{
 		.inputProcRefCon	= mScreen,
-		.inputProc			= (AURenderCallback)
-								(gSpeedInfo[speed].inputProc),
+		.inputProc			= (AURenderCallback)InputProc,
 	};
 	AudioStreamBasicDescription  format =
 	{
-		.mSampleRate		= gSpeedInfo[speed].sampleRate,
+		.mSampleRate		= speed > 1 ? 2 * kSampleRate : kSampleRate,
 		.mFormatID			= kAudioFormatLinearPCM,
 		.mFormatFlags		= kFormatFlags,
 		.mFramesPerPacket	= 1, // must be 1 for uncompressed data
@@ -150,7 +88,7 @@ static struct
 	OSStatus		sts;
 
 	sts = AU_SetBufferFrameSize(G.audioUnit,
-		gSpeedInfo[speed].bufFrameSize);
+								speed > 1 ? kA2SamplesPerStep : 2 * kA2SamplesPerStep);
 	if (sts != noErr)
 		return sts;
 
@@ -204,7 +142,7 @@ static struct
 
 	[mModelEmblem setStringValue:[mA2 ModelName]];
 	[self setHasUndoManager:NO];
-	[self _SetRunState:(1 - kNumSpeeds)];
+	[self _SetRunState:G.prefs.speed | ~kSpeedMask];
 
 	[mScreen setNextResponder:mA2];
 	[mA2 setNextResponder:mainWindow];
@@ -213,6 +151,7 @@ static struct
 //	[mainWindow setBackgroundColor:[NSColor blackColor]];
 //	[mainWindow setAcceptsMouseMovedEvents:YES];
 //	[mainWindow setResizeIncrements:NSMakeSize(0, 100)];
+	[self Unpause];
 }
 
 //---------------------------------------------------------------------------
@@ -221,7 +160,10 @@ static struct
 {/*
 	Responds to the user invoking one of the speed control commands.
 */
-	[self _SetRunState:( mRunState & ~kSpeedMask | [sender tag] )];
+	[[sender menu].itemArray enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+		[obj setState:[sender tag] == [obj tag]];
+	}];
+	[self _SetRunState:(mRunState & ~kSpeedMask) | [sender tag]];
 }
 
 //---------------------------------------------------------------------------
@@ -229,7 +171,7 @@ static struct
 - (void)windowDidResignKey:(NSNotification*)note
 {
 	G.activeScreen = nil;
-	[self Pause];
+//	[self Pause];
 	[ScreenView FullScreenOff];
 }
 
@@ -239,6 +181,18 @@ static struct
 {
 	[self Unpause];
 	G.activeScreen = mScreen;
+	while (mA2.running)
+		;
+	for (int i = 0; i < 2; i++)
+		if (G.prefs.diskImagePath[i].length) {
+			NSString *path = G.prefs.diskImagePath[i];
+			struct stat st;
+			if (!stat([path fileSystemRepresentation], &st) && G.loadTime[i] < st.st_mtimespec.tv_sec) {
+				G.loadTime[i] = st.st_mtimespec.tv_sec;
+				[self loadDrive:i path:path];
+				[mA2 SignalReboot:nil];
+			}
+		}
 }
 
 //---------------------------------------------------------------------------

@@ -15,7 +15,7 @@
 	IBOutlet A2Computer*		mA2;
 
 	void		(*mRenderScreen )(id, SEL, void*, int32_t);
-	void		(*mRunForOneStep)(id, SEL, uint8_t*);
+	void		(*mRunForOneStep)(id, SEL, int, uint8_t*);
 }
 
 + (void)		FullScreenOff;

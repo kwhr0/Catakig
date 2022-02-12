@@ -115,9 +115,7 @@ typedef struct A2Memory
 
 		mixedSlotROM[0x800],
 		WOM[0x800],			// write-only memory (for ROM writes)
-		pad_[0x1000],		// pad struct up to next 0x2000 boundary
-
-		diskBuffers[4][0x2000];
+		pad_[0x1000];		// pad struct up to next 0x2000 boundary
 
 } A2Memory;
 
@@ -125,12 +123,6 @@ typedef struct A2Memory
 
 extern struct A2PrivateTables
 {
-	uint8_t			tPHP[1 << 12];
-	uint16_t		tPLP[0x100],
-					tROL[0x100 << 3],
-					tROR[0x100 << 3];
-	int16_t			tADC [0xC40], tSBC [0xC40], // for 65c02
-					tADCo[0xC40], tSBCo[0xC40]; // for 6502
 	int8_t			rmaps[kmRMap+1][0x80+1],
 					wmaps[kmWMap+1][0x80+1];
 	struct {

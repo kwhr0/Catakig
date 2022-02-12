@@ -114,12 +114,6 @@ static struct // the ROM repository
 	};
 	uint8_t		*ROM0 = mMemory->ROM[0], // internal, or main bank
 				*ROM1 = mMemory->ROM[1]; // external, or alt. bank
-
-	if (mModel < kA2ModelIIe)
-		mTblADC = A2T.tADCo, mTblSBC = A2T.tSBCo;
-	else
-		mTblADC = A2T.tADC , mTblSBC = A2T.tSBC;
-
 	mMutableFlags = 0;
 	memset(mMemory->ROM, 0, sizeof(mMemory->ROM)); // wipe ROM clean
 

@@ -89,7 +89,7 @@ OSStatus AU_Open(AudioUnit* audioUnit)
 	OSStatus				sts;
 	UInt32					n;
 	Component				comp;
-	ComponentDescription	compDesc =
+	AudioComponentDescription	compDesc =
 	{
 		.componentType			= kAudioUnitType_Output,          
 		.componentSubType		= kAudioUnitSubType_DefaultOutput,
@@ -99,10 +99,8 @@ OSStatus AU_Open(AudioUnit* audioUnit)
 	};
 
 	*audioUnit = 0;
-	if (NULL == (comp = FindNextComponent(NULL, &compDesc)))
-		return fnfErr;
-	if (noErr != (sts = OpenAComponent(comp, audioUnit)))
-		return sts;
+	AudioComponentInstanceNew(AudioComponentFindNext(NULL, &compDesc), audioUnit);
+	if (!*audioUnit) return 1;
 #if 0
 	sts = AudioUnitSetProperty(*audioUnit,
 		kAudioUnitProperty_MaximumFramesPerSlice, kAudioUnitScope_Global,
@@ -162,7 +160,7 @@ void AU_Close(AudioUnit* audioUnit)
 }
 
 //---------------------------------------------------------------------------
-
+#if 0
 BOOL GL_CheckExtension(const char* name)
 {/*
 	Tests whether a given OpenGL extension is supported.
@@ -170,7 +168,7 @@ BOOL GL_CheckExtension(const char* name)
 	return gluCheckExtension((const GLubyte*)name,
 		glGetString(GL_EXTENSIONS));
 }
-
+#endif
 //---------------------------------------------------------------------------
 
 void GL_ClearBothBuffers(void)

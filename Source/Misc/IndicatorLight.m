@@ -42,7 +42,8 @@
 {/*
 	Sets this light's state to a value from 0 to 8.
 */
-	[self setImageAlignment:(int)("\2\3\6\7\1\4\0\x8\5"[state % 9])];
+//	[self setImageAlignment:(int)("\2\3\6\7\1\4\0\x8\5"[state % 9])];
+	[self setImageAlignment:(int)("\2\3\6\7\2\3\6\7\5"[state % 9])];
 //  [self setNeedsDisplay];
 }
 

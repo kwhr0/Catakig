@@ -2,10 +2,6 @@
 
 	The one and only public interface file for the LibAppleII library.
 */
-#import <Foundation/Foundation.h>
-//mport <AppKit/AppKit.h>
-#import <stdint.h>
-#import <stdio.h>
 
 //---------------------------------------------------------------------------
 //	Handy integer constants.
@@ -114,15 +110,14 @@ extern struct A2Globals
 
 //---------------------------------------------------------------------------
 
+struct W65C02;
+
 @interface A2Computer : NSResponder // <NSCoding>
 {
+	struct W65C02 *mMpu;
 	//-----------------	Computer State -----------------
-
-	uint8_t				mA, mX, mY, mS,	// some 6502 registers
-						mI,				// 6502 I flag (= 0 or 4)
-						mModel,			// model identifier code
+	uint8_t				mModel,			// model identifier code
 						mHalts;			// flags to block emulation
-	uint16_t			mPC, mP;		// PC and pseudo-P registers
 	uint32_t			mFlags,			// flags and soft-switches
 						mMutableFlags,	// flags this model may change
 						mCycles,		// CPU cycle count
@@ -130,11 +125,12 @@ extern struct A2Globals
 
 	struct A2Memory*	mMemory;		// struct containing all our memory
 	unsigned			mMemorySize;	// size of allocated memory
-	int16_t				*mTblADC,		// this model's ADC and SBC tables
-						*mTblSBC;
 
 	uint8_t				mVideoFlags[262];	// video flags at each scanline
-
+	
+	int mScanLine;
+	int32_t mT, mSlow;
+	BOOL mAudioActive;
 	//-----------------	Peripherals -----------------
 
 	struct {			// keyboard input queue
@@ -171,6 +167,10 @@ extern struct A2Globals
 #endif
 }
 
+- (void)powerOn;
+
+@property (nonatomic) BOOL running;
+
 @end
 
 //---------------------------------------------------------------------------
@@ -188,7 +188,14 @@ extern struct A2Globals
 @interface A2Computer (CPU)
 
 + (void)		_InitCPU;
-- (void)		RunForOneStep:(uint8_t [])audioOut;
+- (void)		RunForOneStep:(int)loopN audio:(uint8_t [])audioOut;
+
+@end
+
+@interface A2Computer (RW)
+
+- (uint32_t)	read:(unsigned)ea;
+- (void)		write:(unsigned)ea data:(uint32_t)d;
 
 @end
 

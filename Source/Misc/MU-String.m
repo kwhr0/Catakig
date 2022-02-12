@@ -1,6 +1,4 @@
 #import "MyUtils.h"
-#import <regex.h>
-#import <sys/stat.h>
 
 @implementation NSString (MyUtils)
 //---------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 #import "Catakig-Cocoa.h"
 #import "MyDocument.h"
+#import "ScreenView.h"
 
 enum
 {
@@ -25,6 +26,17 @@ enum
 	}
 }
 
++ (void)AllFlash
+{
+	NSEnumerator*	e = [[G.docMgr documents] objectEnumerator];
+	MyDocument*		doc;
+
+	while ((doc = [e nextObject]))
+	{
+		[doc->mScreen Flash];
+	}
+}
+
 //---------------------------------------------------------------------------
 
 - (NSString*)windowNibName
@@ -35,6 +47,12 @@ enum
 	and override -makeWindowControllers instead."
 */
     return @"MyDocument";
+}
+
+- (void)close {
+	while (mA2.running)
+		;
+	[super close];
 }
 
 //---------------------------------------------------------------------------

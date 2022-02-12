@@ -5,6 +5,7 @@
 #import "Catakig-Cocoa.h"
 #import "AboutPanel.h"
 #import "ScreenView.h"
+#import "MyDocument.h"
 
 @implementation AboutPanel
 //---------------------------------------------------------------------------
@@ -17,7 +18,7 @@
 		[G.activeScreen setNeedsDisplay:YES];
 	else
 	{
-		[G.activeScreen Flash];
+		[MyDocument AllFlash];
 		counter = 7;
 
 		if ([self isKeyWindow])

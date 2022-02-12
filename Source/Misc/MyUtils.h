@@ -3,27 +3,7 @@
 	My own (CK's) generally useful additions to the Cocoa/GNUstep classes,
 	which are not specific to any particular project.
 */
-#import <Foundation/Foundation.h>
-#import <AppKit/AppKit.h>
 
-#import <sys/types.h>
-//mport <fcntl.h>
-#import <stdint.h>
-#import <unistd.h>
-
-//---------------------------------------------------------------------------
-@interface NSData (MyUtils)
-
-+ (NSData*)		BZCompressBytes:(const void*)src length:(unsigned)srcLen
-					level:(int)level;
-
-@end
-//---------------------------------------------------------------------------
-@interface NSMovie (MyUtils)
-
-- (id)			InitWithResource:(NSString*)fname;
-
-@end
 //---------------------------------------------------------------------------
 @interface NSObject (MyUtils)
 
@@ -91,12 +71,7 @@
 - (BOOL)		RegisterBool:(BOOL)value forKey:(NSString*)key;
 - (int)			RegisterInteger:(int)value forKey:(NSString*)key;
 - (float)		RegisterFloat:(float)value forKey:(NSString*)key;
-
-@end
-//---------------------------------------------------------------------------
-@interface NSView (MyUtils)
-
-- (BOOL)		MakeFirstResponder;
+- (id)			RegisterObject:(id)obj forKey:(NSString*)key;
 
 @end
 //---------------------------------------------------------------------------

@@ -19,11 +19,12 @@
 	IBOutlet NSTextField*		mPrSessionSize;
 	IBOutlet NSButton*			mPrSessionAddSuffix;
 
-	int		mRunState; // low 2 bits: speed;  higher bits: pause level
+	int		mRunState; // low 3 bits: speed;  higher bits: pause level
 	int		mFileFilter;
 }
 
 + (void)		AllNeedDisplay;
++ (void)		AllFlash;
 
 @end
 
@@ -44,5 +45,6 @@
 - (IBAction)	CopyScreenText:(id)sender;
 - (IBAction)	SaveScreenImage:(id)sender;
 - (IBAction)	HitDiskDrive:(id)sender;
+- (void)loadDrive:(int)index path:(NSString *)path;
 
 @end

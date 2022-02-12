@@ -8,15 +8,12 @@
 #import "ScreenView.h"
 #import "IndicatorLight.h"
 
-#import <Carbon/Carbon.h>
-
 @implementation ScreenView
 //---------------------------------------------------------------------------
 
 enum
 {
 	kCaptureAllScreens		= NO,
-//	kUseShieldWindow		= NO,
 	kUseOwnGState			= YES,
 	kUseSetSystemUIMode		= NO,
 	kLockPixels				= YES,
@@ -25,7 +22,6 @@ enum
 	kTexHeight			=  256,				//   height of shared GL texture
 	kPixelFormat		= GL_COLOR_INDEX,
 	kPixelType			= GL_UNSIGNED_BYTE,
-//	kBestScreenDepth	= 16,
 
 	kfFlash				= 1 << 6,
 	kfMonochrome		= 1 << 7,
@@ -180,9 +176,9 @@ static NSOpenGLContext* MakeFullScreenContext(CGDirectDisplayID dpy)
 	NSOpenGLPixelFormatAttribute  pixFmtAttrs[] =
 	{
 		NSOpenGLPFAWindow,
-		NSOpenGLPFAAccelerated,
+	//	NSOpenGLPFAAccelerated,
 		NSOpenGLPFANoRecovery,
-		NSOpenGLPFADoubleBuffer,
+	//	NSOpenGLPFADoubleBuffer, (commented out for VirtualBox)
 	//	NSOpenGLPFABackingStore,
 	//	NSOpenGLPFAPixelBuffer,
 
@@ -226,7 +222,7 @@ static NSOpenGLContext* MakeFullScreenContext(CGDirectDisplayID dpy)
 	mRenderScreen = (void*) [A2Computer instanceMethodForSelector:
 		@selector(RenderScreen::) ];
 	mRunForOneStep = (void*) [A2Computer instanceMethodForSelector:
-		@selector(RunForOneStep:) ];
+		@selector(RunForOneStep:audio:) ];
 
 //	Need to release this view's previous GLContext??
 	[self setOpenGLContext:[[NSOpenGLContext alloc]
@@ -293,10 +289,8 @@ static NSOpenGLContext* MakeFullScreenContext(CGDirectDisplayID dpy)
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, kA2ScreenWidth, 192,
 		kPixelFormat, kPixelType, g.pixels);
 	glCallList(g.displayListID);
-	[context flushBuffer];
-
-//	if (g.fullScreenScreen == self)
-//		[self MakeCurrentContext]; // need to restore previous context??
+	glFlush(); // single buffer
+	//[context flushBuffer]; // double buffer
 }
 
 //---------------------------------------------------------------------------
@@ -315,6 +309,7 @@ static NSOpenGLContext* MakeFullScreenContext(CGDirectDisplayID dpy)
 {/*
 	Toggles this Apple II between full-screen mode and windowed mode.
 */
+#if 0			// not supported
 	static CGDirectDisplayID	dpy;
 	static CFDictionaryRef		prevMode;
 
@@ -361,6 +356,9 @@ static NSOpenGLContext* MakeFullScreenContext(CGDirectDisplayID dpy)
 	SetMouseRange();
 	[self setNeedsDisplay:YES];
 	[mDocument Unpause];
+#else
+	NSLog(@"Fullscreen is not supported.");
+#endif
 }
 
 //---------------------------------------------------------------------------

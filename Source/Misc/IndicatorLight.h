@@ -1,5 +1,3 @@
-#import <AppKit/AppKit.h>
-
 @interface IndicatorLight : NSImageView
 {
 }

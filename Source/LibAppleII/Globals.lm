@@ -270,7 +270,7 @@ unsigned A2HitIWM(A2IWM* iwm, unsigned ea, unsigned d)
 		{
 			if (not (f & kfSpinning))
 				iwm->modeReg = d;
-			else if (dr->mContent == kA2DiskReadWrite)
+			else if (dr->mContent == kA2DiskReadWrite && dr->mTrackBase)
 			{
 				dr->mDiskModified = YES;
 				dr->mTrackBase[dr->mTheta] = d | 0x80;
@@ -286,8 +286,11 @@ unsigned A2HitIWM(A2IWM* iwm, unsigned ea, unsigned d)
 		{
 			if ((f & kfQ67) == 0) // return disk data
 			{
-				d = dr->mTrackBase[dr->mTheta];
-				INC_THETA;
+				if (dr->mTrackBase) {
+					d = dr->mTrackBase[dr->mTheta];
+					INC_THETA;
+				}
+				else d = 0;
 			}
 			else if (f & kfQ6) // return status reg
 				d = (dr->mContent == kA2DiskReadOnly)<<7

@@ -7,6 +7,11 @@
 #import "AppController.h"
 #import "ScreenView.h"
 
+static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp *now, const CVTimeStamp *outputTime, CVOptionFlags flagsIn, CVOptionFlags *flagsOut, void *context) {
+	[MyDocument performSelectorOnMainThread:@selector(AllNeedDisplay) withObject:nil waitUntilDone:NO];
+	return kCVReturnSuccess;
+}
+
 @implementation AppController
 //---------------------------------------------------------------------------
 
@@ -41,14 +46,22 @@
 }
 
 //---------------------------------------------------------------------------
-#if 0
+- (void)applicationWillFinishLaunching:(NSNotification *)notification {
+	G.appController = self;
+}
 - (void)applicationDidFinishLaunching:(NSNotification*)note
 {/*
 	"Sent by the default notification center after the application has been
 	launched and initialized but before it has received its first event."
 */
+	[[NSApplication.sharedApplication.mainMenu.itemArray[2] submenu].itemArray enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+		[obj setState:[obj tag] == G.prefs.speed];
+	}];
+	CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);
+	CVDisplayLinkSetOutputCallback(displayLink, MyDisplayLinkCallback, nil);
+	CVDisplayLinkStart(displayLink);
 }
-#endif
+
 //---------------------------------------------------------------------------
 
 - (NSApplicationTerminateReply)
@@ -57,11 +70,13 @@
 	AU_Close(&G.audioUnit);
 	[ScreenView FullScreenOff];
 
+	CVDisplayLinkStop(displayLink);
+	CVDisplayLinkRelease(displayLink);
 	return NSTerminateNow;
 }
 
 //---------------------------------------------------------------------------
-
+#if 0
 - (BOOL)applicationShouldOpenUntitledFile:(NSApplication*)sender
 {/*
 	Returns whether the application should automatically create a new
@@ -69,7 +84,7 @@
 */
 	return NO;
 }
-
+#endif
 //---------------------------------------------------------------------------
 
 - (void)applicationDidChangeScreenParameters:(NSNotification*)note
@@ -82,7 +97,7 @@
 
 //---------------------------------------------------------------------------
 
-- (IBAction)newDocument:(id)sender
+- (void)setup
 {/*
 	Called when the user invokes the "New" menu command.  (Normally the
 	global DocumentController gets this message first.)
@@ -108,9 +123,6 @@
 	{
 		A2G.defaultModel    = [mNewA2Model selectedTag];
 		A2G.defaultExtraRAM = [mNewA2ExtraRAM selectedTag];
-
-		[G.docMgr newDocument:sender];
-	//	[G.docMgr openUntitledDocumentOfType ... ];
 	}
 }
 

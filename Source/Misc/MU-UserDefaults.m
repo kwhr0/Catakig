@@ -32,4 +32,10 @@
 }
 
 //---------------------------------------------------------------------------
+- (id)			RegisterObject:(id)obj forKey:(NSString*)key
+{
+	[self registerDefaults:[NSDictionary dictionaryWithObject:obj forKey:key]];
+
+	return [self objectForKey:key];
+}
 @end

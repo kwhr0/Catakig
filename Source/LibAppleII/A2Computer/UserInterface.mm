@@ -6,6 +6,8 @@
 */
 #import "LibAppleII-Priv.h"
 #import "A2DiskDrive.h"
+#import "W65C02.h"
+#import "Catakig-Cocoa.h"
 
 @implementation A2Computer (UserInterface)
 //---------------------------------------------------------------------------
@@ -147,8 +149,13 @@ static NSString* gNameOfModel[] =
 	memset(mVideoFlags, mFlags, sizeof(mVideoFlags));
 
 	mKeyQ.tail = mKeyQ.head = 0;
-	mPC = mMemory->ROM[0][0x3FFD] << 8 // load PC from $FFFC-D in ROM
-		| mMemory->ROM[0][0x3FFC];
+	
+	if (!mMpu) {
+		mMpu = new W65C02;
+		mMpu->SetA2(self, mMemory);
+	}
+	mMpu->Reset();
+	mMpu->SetPC(mMemory->ROM[0][0x3FFD] << 8 | mMemory->ROM[0][0x3FFC]);
 
 	mPrinter.reg[0xA] = 0; // command reg
 	mPrinter.reg[0xB] = 0x3E; // control reg
@@ -250,6 +257,7 @@ static inline uint8_t ASCIIfy(int charset, uint8_t ch)
 		if (newLines)
 			*pout++ = '\n';
 	}
+	*pout++ = 0;
 
 	return [NSString stringWithCString:cstr length:(pout-cstr)];
 }
@@ -263,7 +271,7 @@ static inline uint8_t ASCIIfy(int charset, uint8_t ch)
 */
 	static struct
 	{
-		char	hi[100], lo[100];
+		char	hi[101], lo[101];
 	}
 		digit =
 	{
@@ -291,20 +299,32 @@ static inline uint8_t ASCIIfy(int charset, uint8_t ch)
 
 	uint8_t str[32] =
 	{
-		tm.tm_mon << 5 | tm.tm_mday,
-		tm.tm_year << 1 | tm.tm_mon >> 3,
-		tm.tm_min,
-		tm.tm_hour,
+		uint8_t(tm.tm_mon << 5 | tm.tm_mday),
+		uint8_t(tm.tm_year << 1 | tm.tm_mon >> 3),
+		uint8_t(tm.tm_min),
+		uint8_t(tm.tm_hour),
 
-		digit.hi[tm.tm_mon ], digit.lo[tm.tm_mon ], ',',
-		'0', digit.lo[tm.tm_wday], ',',
-		digit.hi[tm.tm_mday], digit.lo[tm.tm_mday], ',',
-		digit.hi[tm.tm_hour], digit.lo[tm.tm_hour], ',',
-		digit.hi[tm.tm_min ], digit.lo[tm.tm_min ], ',',
-		digit.hi[tm.tm_sec ], digit.lo[tm.tm_sec ], 13,
+		uint8_t(digit.hi[tm.tm_mon ]), uint8_t(digit.lo[tm.tm_mon ]), ',',
+		'0', uint8_t(digit.lo[tm.tm_wday]), ',',
+		uint8_t(digit.hi[tm.tm_mday]), uint8_t(digit.lo[tm.tm_mday]), ',',
+		uint8_t(digit.hi[tm.tm_hour]), uint8_t(digit.lo[tm.tm_hour]), ',',
+		uint8_t(digit.hi[tm.tm_min ]), uint8_t(digit.lo[tm.tm_min ]), ',',
+		uint8_t(digit.hi[tm.tm_sec ]), uint8_t(digit.lo[tm.tm_sec ]), 13,
 	};
 
 	QCOPY(A2T.curTime, str, 32);
+	
+	extern int gAudioCallbackCount;
+	static bool dropflag;
+	if (gAudioCallbackCount < (G.prefs.speed > 1 ? 108 : 54)) {
+		dropflag = true;
+		fprintf(stderr, "audio drop detected: %d\n", gAudioCallbackCount);
+	}
+	else if (dropflag) {
+		dropflag = false;
+		fprintf(stderr, "audio drop recovered.\n");
+	}
+	gAudioCallbackCount = 0;
 }
 
 //---------------------------------------------------------------------------

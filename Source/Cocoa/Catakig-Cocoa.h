@@ -6,7 +6,7 @@
 #import "MyUtils.h"
 #import "LibAppleII.h"
 
-@class ScreenView;
+@class ScreenView, AppController;
 
 enum
 {
@@ -23,7 +23,9 @@ typedef struct
 				keepBackupFiles,
 				firstLaunch;
 	uint8_t		joystickControl;	// = kJoyMouse, etc.
-
+	NSString *diskImagePath[2];
+	uint8_t model, ram, speed;
+	
 #if 0
 	BOOL		monochromeGlow;
 	BOOL		showHelpTips;
@@ -49,6 +51,8 @@ extern struct CatakigGlobals
 	AudioUnit		audioUnit;
 //	BOOL			inFullScreenMode;
 	ScreenView*		activeScreen;
+	AppController*	appController;
+	time_t loadTime[2];
 } G;
 
 
