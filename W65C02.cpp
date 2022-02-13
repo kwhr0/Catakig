@@ -70,10 +70,10 @@ int W65C02::Execute(int n) {
 	auto lda = [&](uint8_t d) { fld(a = d); };
 	auto ldx = [&](uint8_t d) { fld(x = d); };
 	auto ldy = [&](uint8_t d) { fld(y = d); };
-	auto sta = [&](uint8_t d) { return a; };
-	auto stx = [&](uint8_t d) { return x; };
-	auto sty = [&](uint8_t d) { return y; };
-	auto stz = [&](uint8_t d) { return 0; };
+	auto sta = [&] { return a; };
+	auto stx = [&] { return x; };
+	auto sty = [&] { return y; };
+	auto stz = [] { return 0; };
 	auto adc = [&](uint8_t d) { uint16_t t; fadd(a, d, t = a + d + CY); a = t; };
 	auto sbc = [&](uint8_t d) { uint16_t t; fsub(a, d, t = a - d - !CY); a = t; };
 	auto cmp = [&](uint8_t d) { fcmp(a, d, a - d); };
@@ -117,7 +117,7 @@ int W65C02::Execute(int n) {
 				st8(0x100 | s--, pc);
 				t8 = ResolvFlags();
 				st8(0x100 | s--, t8 & ~MB);
-				SetupFlags(t8 | MI);
+				intflags |= MI;
 				pc = ld16(0xfffa);
 				clock += 14; // p.142
 			}
@@ -127,7 +127,7 @@ int W65C02::Execute(int n) {
 				st8(0x100 | s--, pc);
 				t8 = ResolvFlags();
 				st8(0x100 | s--, t8);
-				SetupFlags(t8 | MI);
+				intflags |= MI;
 				pc = ld16(0xfffe);
 				clock += 17; // p.139
 			}
@@ -293,7 +293,7 @@ int W65C02::Execute(int n) {
 			case 0x99: wabsy(sta); break;
 			case 0x9a: fld(s = x); clock += 2; break; // txs
 			case 0x9b: clock++; break;
-			case 0x9c: wabs([&](uint8_t) { return 0; }); break;
+			case 0x9c: wabs([] { return 0; }); break;
 			case 0x9d: wabsx(sta); break;
 			case 0x9e: wabsx(stz); break;
 			case 0x9f: rzp([&](uint8_t d) { br(d & 2); }); break;
@@ -539,7 +539,7 @@ void W65C02::StopTrace() {
 	do {
 		if (++tracep >= tracebuf + TRACEMAX) tracep = tracebuf;
 		fprintf(fo, "%4d %04X  ", i++, tracep->pc);
-		for (j = 0; j < tracep->opn; j++) fprintf(fo, "%02x ", tracep->op[j]);
+		for (j = 0; j < tracep->opn; j++) fprintf(fo, "%02X ", tracep->op[j]);
 		for (; j < OPMAX; j++) fprintf(fo, "   ");
 		fprintf(fo, "%02X %02X %02X %02X %c%c%c%c%c%c%c%c ",
 				tracep->a, tracep->x, tracep->y, tracep->s,
