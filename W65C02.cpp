@@ -1,5 +1,5 @@
 // W65C02
-// Copyright 2022 © Yasuo Kuwahara
+// Copyright 2022,2023 © Yasuo Kuwahara
 // MIT License
 
 #include "W65C02.h"
@@ -39,7 +39,7 @@ enum {
 #define fadd(x, y, z)	(fp->dm = N8 | VADD | Z8 | CADD, fp->b = (x), fp->s = (y), fp->a = (z), fmnt())
 #define fsub(x, y, z)	(fp->dm = N8 | VSUB | Z8 | CSUB, fp->b = (x), fp->s = (y), fp->a = (z), fmnt())
 #define fcmp(x, y, z)	(fp->dm = N8 | Z8 | CSUB, fp->b = (x), fp->s = (y), fp->a = (z), fmnt())
-#define fleft(x)		(fp->dm = N8 | Z8 | CLEFT, fp->a = (x), fmnt())
+#define fleft(x, y)		(fp->dm = N8 | Z8 | CLEFT, fp->b = (x), fp->a = (y), fmnt())
 #define fright(x, y)	(fp->dm = N8 | Z8 | CRIGHT, fp->b = (x), fp->a = (y), fmnt())
 #define fbit(x, y)		(fp->dm = NB | VB | Z8, fp->b = (x), fp->a = (y), fmnt())
 #define fz(x)			(fp->dm = Z8, fp->a = (x), fmnt())
@@ -74,8 +74,8 @@ int W65C02::Execute(int n) {
 	auto stx = [&] { return x; };
 	auto sty = [&] { return y; };
 	auto stz = [] { return 0; };
-	auto adc = [&](uint8_t d) { uint16_t t; fadd(a, d, t = a + d + CY); a = t; };
-	auto sbc = [&](uint8_t d) { uint16_t t; fsub(a, d, t = a - d - !CY); a = t; };
+	auto adc = [&](uint8_t d) { fadd(a, d, a += d + CY); };
+	auto sbc = [&](uint8_t d) { fsub(a, d, a -= d + !CY); };
 	auto cmp = [&](uint8_t d) { fcmp(a, d, a - d); };
 	auto cpx = [&](uint8_t d) { fcmp(x, d, x - d); };
 	auto cpy = [&](uint8_t d) { fcmp(y, d, y - d); };
@@ -88,10 +88,10 @@ int W65C02::Execute(int n) {
 	auto biti = [&](uint8_t d) { fz(a & d); };
 	auto tsb = [&](uint8_t d) { fz(a & d); return a | d; };
 	auto trb = [&](uint8_t d) { fz(a & d); return ~a & d; };
-	auto asl = [&](uint8_t d) { uint16_t t = d << 1; fleft(t); return t; };
-	auto rol = [&](uint8_t d) { uint16_t t = d << 1 | CY; fleft(t); return t; };
-	auto lsr = [&](uint8_t d) { fright(d, d >> 1); return d >> 1; };
-	auto ror = [&](uint8_t d) { uint8_t t = d >> 1 | CY << 7; fright(d, t); return t; };
+	auto asl = [&](uint8_t d) { fleft(d, d <<= 1); return d; };
+	auto rol = [&](uint8_t d) { fleft(d, d = d << 1 | CY); return d; };
+	auto lsr = [&](uint8_t d) { fright(d, d >>= 1); return d; };
+	auto ror = [&](uint8_t d) { fright(d, d = d >> 1 | CY << 7); return d; };
 	auto br = [&](uint8_t cond) {
 		if (cond) {
 			uint16_t last = pc;
@@ -105,7 +105,6 @@ int W65C02::Execute(int n) {
 	};
 	clock = 0;
 	do {
-		uint8_t op, t8;
 		if (irq) {
 			if (waitflags & W_WAI) {
 				waitflags &= ~W_WAI;
@@ -115,8 +114,7 @@ int W65C02::Execute(int n) {
 				irq &= ~M_NMI;
 				st8(0x100 | s--, pc >> 8);
 				st8(0x100 | s--, pc);
-				t8 = ResolvFlags();
-				st8(0x100 | s--, t8 & ~MB);
+				st8(0x100 | s--, ResolvFlags() & ~MB);
 				intflags |= MI;
 				pc = ld16(0xfffa);
 				clock += 14; // p.142
@@ -125,8 +123,7 @@ int W65C02::Execute(int n) {
 				irq &= ~M_IRQ;
 				st8(0x100 | s--, pc >> 8);
 				st8(0x100 | s--, pc);
-				t8 = ResolvFlags();
-				st8(0x100 | s--, t8);
+				st8(0x100 | s--, ResolvFlags());
 				intflags |= MI;
 				pc = ld16(0xfffe);
 				clock += 17; // p.139
@@ -136,7 +133,8 @@ int W65C02::Execute(int n) {
 		tracep->pc = pc;
 		tracep->index = tracep->opn = 0;
 #endif
-		switch (op = imm8()) {
+		uint8_t t8;
+		switch (imm8()) {
 			case 0x00: ++pc; st8(0x100 | s--, pc >> 8); st8(0x100 | s--, pc); st8(0x100 | s--, ResolvFlags()); pc = ld16(0xfffe); break; // brk
 			case 0x01: rindx(ora); break;
 			case 0x02: pc++; clock += 2; break;
@@ -428,7 +426,7 @@ int W65C02::ResolvC() {
 		case FSUB:
 			return ~((p->s & ~p->b) | (p->a & ~p->b) | (p->s & p->a)) >> 7 & MC;
 		case FLEFT:
-			return (p->a >> 8 & 1) << LC;
+			return p->b >> 7 << LC;
 		case FRIGHT:
 			return (p->b & 1) << LC;
 		default:

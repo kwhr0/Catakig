@@ -1,5 +1,5 @@
 // W65C02
-// Copyright 2022 © Yasuo Kuwahara
+// Copyright 2022,2023 © Yasuo Kuwahara
 // MIT License
 
 #include "RW.h" // Catakig
@@ -58,42 +58,42 @@ private:
 		W65C02_TRACE_LOG(adr, data, acsStore8);
 	}
 	// customize for Catakig -- end
-	template<typename F> void imm(F func) { func(imm8()); clock += 2; };
-	template<typename F> void ma(F func) { a = func(a); clock += 2; };
-	template<typename F> void rabs(F func) { func(ld8(imm16())); clock += 4; };
-	template<typename F> void wabs(F func) { st8(imm16(), func()); clock += 4; };
-	template<typename F> void mabs(F func) { uint16_t t = imm16(); st8(t, func(ld8(t))); clock += 6; };
-	template<typename F> void rzp(F func) { func(ld8(imm8())); clock += 3; };
-	template<typename F> void wzp(F func) { st8(imm8(), func()); clock += 3; };
-	template<typename F> void mzp(F func) { uint16_t t = imm8(); st8(t, func(ld8(t))); clock += 5; };
-	template<typename F> void rindx(F func) { func(ld8(ld16(imm8() + x & 0xff))); clock += 6; };
-	template<typename F> void windx(F func) { st8(ld16(imm8() + x & 0xff), func()); clock += 6; };
+	template<typename F> void imm(F func) { func(imm8()); clock += 2; }
+	template<typename F> void ma(F func) { a = func(a); clock += 2; }
+	template<typename F> void rabs(F func) { func(ld8(imm16())); clock += 4; }
+	template<typename F> void wabs(F func) { st8(imm16(), func()); clock += 4; }
+	template<typename F> void mabs(F func) { uint16_t t = imm16(); st8(t, func(ld8(t))); clock += 6; }
+	template<typename F> void rzp(F func) { func(ld8(imm8())); clock += 3; }
+	template<typename F> void wzp(F func) { st8(imm8(), func()); clock += 3; }
+	template<typename F> void mzp(F func) { uint16_t t = imm8(); st8(t, func(ld8(t))); clock += 5; }
+	template<typename F> void rindx(F func) { func(ld8(ld16(imm8() + x & 0xff))); clock += 6; }
+	template<typename F> void windx(F func) { st8(ld16(imm8() + x & 0xff), func()); clock += 6; }
 	template<typename F> void rindy(F func) {
-			uint16_t adr0 = ld16(imm8()), adr = adr0 + y;
-			func(ld8(adr));
-			clock += 5 + ((adr0 & 0xff00) != (adr & 0xff00));
-		};
-	template<typename F> void windy(F func) { st8(ld16(imm8()) + y, func()); clock += 6; };
-	template<typename F> void rzpx(F func) { func(ld8(imm8() + x & 0xff)); clock += 4; };
-	template<typename F> void wzpx(F func) { st8(imm8() + x & 0xff, func()); clock += 4; };
-	template<typename F> void mzpx(F func) { uint16_t t = imm8() + x & 0xff; st8(t, func(ld8(t))); clock += 6; };
-	template<typename F> void rzpy(F func) { func(ld8(imm8() + y & 0xff)); clock += 4; };
-	template<typename F> void wzpy(F func) { st8(imm8() + y & 0xff, func()); clock += 4; };
+		uint16_t adr0 = ld16(imm8()), adr = adr0 + y;
+		func(ld8(adr));
+		clock += 5 + ((adr0 & 0xff00) != (adr & 0xff00));
+	}
+	template<typename F> void windy(F func) { st8(ld16(imm8()) + y, func()); clock += 6; }
+	template<typename F> void rzpx(F func) { func(ld8(imm8() + x & 0xff)); clock += 4; }
+	template<typename F> void wzpx(F func) { st8(imm8() + x & 0xff, func()); clock += 4; }
+	template<typename F> void mzpx(F func) { uint16_t t = imm8() + x & 0xff; st8(t, func(ld8(t))); clock += 6; }
+	template<typename F> void rzpy(F func) { func(ld8(imm8() + y & 0xff)); clock += 4; }
+	template<typename F> void wzpy(F func) { st8(imm8() + y & 0xff, func()); clock += 4; }
 	template<typename F> void rabsx(F func) {
-			uint16_t adr0 = imm16(), adr = adr0 + x;
-			func(ld8(adr));
-			clock += 4 + ((adr0 & 0xff00) != (adr & 0xff00));
-		};
-	template<typename F> void wabsx(F func) { st8(imm16() + x, func()); clock += 5; };
-	template<typename F> void mabsx(F func) { uint16_t adr = imm16() + x; st8(adr, func(ld8(adr))); clock += 7; };
+		uint16_t adr0 = imm16(), adr = adr0 + x;
+		func(ld8(adr));
+		clock += 4 + ((adr0 & 0xff00) != (adr & 0xff00));
+	}
+	template<typename F> void wabsx(F func) { st8(imm16() + x, func()); clock += 5; }
+	template<typename F> void mabsx(F func) { uint16_t adr = imm16() + x; st8(adr, func(ld8(adr))); clock += 7; }
 	template<typename F> void rabsy(F func) {
-			uint16_t adr0 = imm16(), adr = adr0 + y;
-			func(ld8(adr));
-			clock += 4 + ((adr0 & 0xff00) != (adr & 0xff00));
-		};
-	template<typename F> void wabsy(F func) { st8(imm16() + y, func()); clock += 5; };
-	template<typename F> void rzpp(F func) { func(ld8(ld16(imm8()))); clock += 5; };
-	template<typename F> void wzpp(F func) { st8(ld16(imm8()), func()); clock += 5; };
+		uint16_t adr0 = imm16(), adr = adr0 + y;
+		func(ld8(adr));
+		clock += 4 + ((adr0 & 0xff00) != (adr & 0xff00));
+	}
+	template<typename F> void wabsy(F func) { st8(imm16() + y, func()); clock += 5; }
+	template<typename F> void rzpp(F func) { func(ld8(ld16(imm8()))); clock += 5; }
+	template<typename F> void wzpp(F func) { st8(ld16(imm8()), func()); clock += 5; }
 	int ResolvC();
 	int ResolvZ();
 	int ResolvI();
@@ -104,8 +104,7 @@ private:
 	void SetupFlags(int x);
 	struct FlagDecision {
 		uint32_t dm;
-		uint8_t s, b;
-		uint16_t a;
+		uint8_t s, b, a;
 	};
 	FlagDecision fbuf[FBUFMAX];
 	FlagDecision *fp;
