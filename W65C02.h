@@ -101,7 +101,7 @@ private:
 	u8 irq, waitflags;
 	u16 pc;
 	int clock;
-#ifdef W65C02_TRACE
+#if W65C02_TRACE
 	static constexpr int TRACEMAX = 10000;
 	static constexpr int ACSMAX = 2;
 	static constexpr int OPMAX = 3;
