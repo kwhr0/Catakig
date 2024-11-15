@@ -47,11 +47,6 @@ enum {
 
 enum { W_WAI = 1, W_STP };
 
-static void error() {
-	fprintf(stderr, "internal error\n");
-	exit(1);
-}
-
 W65C02::W65C02() {
 #if W65C02_TRACE
 	memset(tracebuf, 0, sizeof(tracebuf));

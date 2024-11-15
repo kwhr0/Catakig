@@ -44,13 +44,13 @@ private:
 #endif
 		return data0 | data1 << 8;
 	}
-	int32_t ld8(u16 adr) {
-		int32_t data = Read(adr);
+	u8 ld8(u16 adr) {
+		u8 data = Read(adr);
 		W65C02_TRACE_LOG(adr, data, acsLoad8);
 		return data;
 	}
-	int32_t ld16(u16 adr) {
-		int32_t data = Read(adr);
+	u16 ld16(u16 adr) {
+		u16 data = Read(adr);
 		data |= Read(adr + 1) << 8;
 		W65C02_TRACE_LOG(adr, data, acsLoad16);
 		return data;
@@ -100,7 +100,7 @@ private:
 	u8 a, x, y, s, p;
 	u8 irq, waitflags;
 	u16 pc;
-	uint32_t clock;
+	int clock;
 #ifdef W65C02_TRACE
 	static constexpr int TRACEMAX = 10000;
 	static constexpr int ACSMAX = 2;
