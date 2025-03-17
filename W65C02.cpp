@@ -1,5 +1,5 @@
 // W65C02
-// Copyright 2022-2024 © Yasuo Kuwahara
+// Copyright 2022-2025 © Yasuo Kuwahara
 // MIT License
 
 #include "W65C02.h"
@@ -402,57 +402,22 @@ int W65C02::Execute(int n) {
 	return clock - n;
 }
 
-template<int M> W65C02::u16 W65C02::fset(u16 a, u16 d, u16 s) {
-	if constexpr ((M & 0xf) == C0)
-		p &= ~MC;
-	if constexpr ((M & 0xf) == C1)
-		p |= MC;
-	if constexpr ((M & 0xf) == CADD) {
-		if (((s & d) | (~a & d) | (s & ~a)) & 0x80) p |= MC;
-		else p &= ~MC;
-	}
-	if constexpr ((M & 0xf) == CSUB) {
-		if (((s & ~d) | (a & ~d) | (s & a)) & 0x80) p &= ~MC;
-		else p |= MC;
-	}
-	if constexpr ((M & 0xf) == CLEFT) {
-		if (d & 0x80) p |= MC;
-		else p &= ~MC;
-	}
-	if constexpr ((M & 0xf) == CRIGHT) {
-		if (d & 1) p |= MC;
-		else p &= ~MC;
-	}
-	if constexpr ((M & 0xf0) == Z8) {
-		if (a & 0xff) p &= ~MZ;
-		else p |= MZ;
-	}
-	if constexpr ((M & 0xf000) == D0)
-		p &= ~MD;
-	if constexpr ((M & 0xf000) == D1)
-		p |= MD;
-	if constexpr ((M & 0xf000000) == V0)
-		p &= ~MV;
-	if constexpr ((M & 0xf000000) == VD) {
-		if (d & MV) p |= MV;
-		else p &= ~MV;
-	}
-	if constexpr ((M & 0xf000000) == VADD) {
-		if (((d & s & ~a) | (~d & ~s & a)) & 0x80) p |= MV;
-		else p &= ~MV;
-	}
-	if constexpr ((M & 0xf000000) == VSUB) {
-		if (((d & ~s & ~a) | (~d & s & a)) & 0x80) p |= MV;
-		else p &= ~MV;
-	}
-	if constexpr ((M & 0xf0000000) == ND) {
-		if (d & MN) p |= MN;
-		else p &= ~MN;
-	}
-	if constexpr ((M & 0xf0000000) == N8) {
-		if (a & 0x80) p |= MN;
-		else p &= ~MN;
-	}
+template<int M> W65C02::u16 W65C02::fset(u8 a, u8 d, u8 s) {
+	if constexpr ((M & 0xf) == C0) p &= ~MC;
+	if constexpr ((M & 0xf) == C1) p |= MC;
+	if constexpr ((M & 0xf) == CADD) p = ((s & d) | (~a & d) | (s & ~a)) & 0x80 ? p | MC : p & ~MC;
+	if constexpr ((M & 0xf) == CSUB) p = ((s & ~d) | (a & ~d) | (s & a)) & 0x80 ? p & ~MC : p | MC;
+	if constexpr ((M & 0xf) == CLEFT) p = d & 0x80 ? p | MC : p & ~MC;
+	if constexpr ((M & 0xf) == CRIGHT) p = d & 1 ? p | MC : p & ~MC;
+	if constexpr ((M & 0xf0) == Z8) p = a ? p & ~MZ : p | MZ;
+	if constexpr ((M & 0xf000) == D0) p &= ~MD;
+	if constexpr ((M & 0xf000) == D1) p |= MD;
+	if constexpr ((M & 0xf000000) == V0) p &= ~MV;
+	if constexpr ((M & 0xf000000) == VD) p = d & MV ? p | MV : p & ~MV;
+	if constexpr ((M & 0xf000000) == VADD) p = ((d & s & ~a) | (~d & ~s & a)) & 0x80 ? p | MV : p & ~MV;
+	if constexpr ((M & 0xf000000) == VSUB) p = ((d & ~s & ~a) | (~d & s & a)) & 0x80 ? p | MV : p & ~MV;
+	if constexpr ((M & 0xf0000000) == ND) p = d & MN ? p | MN : p & ~MN;
+	if constexpr ((M & 0xf0000000) == N8) p = a & 0x80 ? p | MN : p & ~MN;
 	return a;
 }
 

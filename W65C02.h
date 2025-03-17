@@ -1,5 +1,5 @@
 // W65C02
-// Copyright 2022-2024 © Yasuo Kuwahara
+// Copyright 2022-2025 © Yasuo Kuwahara
 // MIT License
 
 #include "RW.h" // Catakig
@@ -96,7 +96,7 @@ private:
 	template<typename F> void wabsy(F func) { st8(imm16() + y, func()); clock += 5; }
 	template<typename F> void rzpp(F func) { func(ld8(ld16(imm8()))); clock += 5; }
 	template<typename F> void wzpp(F func) { st8(ld16(imm8()), func()); clock += 5; }
-	template<int M> u16 fset(u16 a = 0, u16 d = 0, u16 s = 0);
+	template<int M> u16 fset(u8 a = 0, u8 d = 0, u8 s = 0);
 	u8 a, x, y, s, p;
 	u8 irq, waitflags;
 	u16 pc;
